@@ -7,7 +7,7 @@ namespace AutoWifiAdbConnect
     static class Settings
     {
         public static readonly string SaveSettingsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Wi-Fi ADB Connector";
-        public static SettingsData SettingsObject { get; set; }
+        public static SettingsData SettingsObject { get; set; } = SettingsObject = new SettingsData();
 
         static Settings()
         {
@@ -21,7 +21,6 @@ namespace AutoWifiAdbConnect
                 SettingsObject = JsonUtilities.Deserialize<SettingsData>(File.ReadAllText(SaveSettingsDirectory + @"\settings.txt"));
             }
             catch { }
-            finally { SettingsObject = new SettingsData(); }
         }
 
         public static void Save()

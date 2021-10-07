@@ -49,6 +49,7 @@ namespace AutoWifiAdbConnect
         {
             e.Cancel = true;
             HideWindow();
+            Settings.Save();
         }
     }
 }

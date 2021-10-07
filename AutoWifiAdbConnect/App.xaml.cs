@@ -13,7 +13,6 @@ namespace AutoWifiAdbConnect
         {
             if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
                 Shutdown();
-            this.Exit += (sender, e) => Settings.Save();
         }
 
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
