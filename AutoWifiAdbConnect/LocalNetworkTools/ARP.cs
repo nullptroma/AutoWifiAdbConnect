@@ -14,6 +14,14 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
             startInfo.Arguments = @"/c " + @"for /L %a in (1,1,254) do @start /b ping 192.168.1.%a -n 1 > nul";
             Process process = Process.Start(startInfo);
             process.WaitForExit();
+
+            startInfo = new ProcessStartInfo();
+            startInfo.CreateNoWindow = true;
+            startInfo.UseShellExecute = false;
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = @"/c " + @"for /L %a in (1,1,254) do @start /b ping 192.168.0.%a -n 1 > nul";
+            process = Process.Start(startInfo);
+            process.WaitForExit();
         }
 
         public List<string> GetAll()
