@@ -20,7 +20,8 @@ namespace AutoWifiAdbConnect
             {
                 SettingsObject = JsonUtilities.Deserialize<SettingsData>(File.ReadAllText(SaveSettingsDirectory + @"\settings.txt"));
             }
-            catch { SettingsObject = new SettingsData(); }
+            catch { }
+            finally { SettingsObject = new SettingsData(); }
         }
 
         public static void Save()
