@@ -6,8 +6,8 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 {
     public class IPMacMapper
     {
-        private static ARP arp = new ARP();
-        private List<IPAndMac> list;
+        private static ARP _arp = new ARP();
+        private List<IPAndMac> _list;
 
         public IPMacMapper()
         {
@@ -16,7 +16,7 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 
         public List<String> GetAllIps()
         {
-            return arp.GetAll().Where(x => !string.IsNullOrEmpty(x))
+            return _arp.GetAll().Where(x => !string.IsNullOrEmpty(x))
                 .Select(x =>
                 {
                     string[] parts = x.Split(" ", StringSplitOptions.RemoveEmptyEntries);
@@ -26,7 +26,7 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 
         public void RefreshList()
         {
-            list = arp.GetAll().Where(x => !string.IsNullOrEmpty(x) && x.Trim().StartsWith("192."))
+            _list = _arp.GetAll().Where(x => !string.IsNullOrEmpty(x) && x.Trim().StartsWith("192."))
                 .Select(x =>
                 {
                     string[] parts = x.Split(" ", StringSplitOptions.RemoveEmptyEntries);
@@ -36,7 +36,7 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 
         public string FindIPFromMacAddress(string macAddress)
         {
-            IPAndMac item = list.SingleOrDefault(x => x.MAC == macAddress);
+            IPAndMac item = _list.SingleOrDefault(x => x.MAC == macAddress);
             if (string.IsNullOrEmpty(item.IP))
                 return null;
             return item.IP;
@@ -44,7 +44,7 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 
         public string FindMacFromIPAddress(string ip)
         {
-            IPAndMac item = list.SingleOrDefault(x => x.IP == ip);
+            IPAndMac item = _list.SingleOrDefault(x => x.IP == ip);
             if (string.IsNullOrEmpty(item.IP))
                 return null;
             return item.MAC;

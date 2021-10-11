@@ -10,10 +10,10 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 {
     class AdbExecutor
     {
-        public event CommandExecutedEventHandler Executed;
         public string AdbDir { get; set; }
         public bool AdbDirCorrect { get { return File.Exists(Path.Combine(AdbDir, "adb.exe")); } }
-        private Queue<string> commands = new Queue<string>();
+        public event CommandExecutedEventHandler Executed;
+        private Queue<string> _commands = new Queue<string>();
 
         public AdbExecutor(string _adbDir = "")
         {
@@ -22,9 +22,9 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
             {
                 while (true)
                 {
-                    if (commands.Count > 0)
+                    if (_commands.Count > 0)
                     {
-                        string cmd = commands.Dequeue();
+                        string cmd = _commands.Dequeue();
                         if (!AdbDirCorrect)
                             continue;
                         Task t = Task.Run(() =>
@@ -43,7 +43,7 @@ namespace AutoWifiAdbConnect.LocalNetworkTools
 
         public void Enqueue(string cmd)
         {
-            commands.Enqueue(cmd);
+            _commands.Enqueue(cmd);
         }
 
         private string RunAdb(string cmd)

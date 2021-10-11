@@ -1,139 +1,139 @@
-﻿using AutoWifiAdbConnect.MVVM.Model;
+﻿using AutoWifiAdbConnect.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Timers;
 
-namespace AutoWifiAdbConnect.MVVM.ViewModel
+namespace AutoWifiAdbConnect.ViewModel
 {
     class MainViewModel : BaseViewModel
     {
-        private LocalNetworkTools.AdbExecutor adbExecutor = new LocalNetworkTools.AdbExecutor();
-        private WifiAdbConnector connector;
-        public WifiAdbConnector.Connectoin SelectedConnection { get; set; }
+        private LocalNetworkTools.AdbExecutor _adbExecutor = new LocalNetworkTools.AdbExecutor();
+        private Timer _timer = new Timer() { AutoReset = true, Interval = 3000 };
+        private WifiAdbConnector _connector;
+        public Connectoin SelectedConnection { get; set; }
         public string NewAddress { get; set; }
         public string AdbDir
         {
-            get { return adbExecutor.AdbDir; }
+            get { return _adbExecutor.AdbDir; }
             set
             {
-                adbExecutor.AdbDir = value;
-                connector.Reset();
+                _adbExecutor.AdbDir = value;
+                _connector.Reset();
                 OnPropertyChanged(nameof(AdbDir));
                 OnPropertyChanged(nameof(AdbCorrect));
-                Settings.SettingsObject.AdbPath = value;
+                Settings.Instance.AdbPath = value;
             }
         }
-        public bool AdbCorrect { get { return adbExecutor.AdbDirCorrect; } }
+        public bool AdbCorrect { get { return _adbExecutor.AdbDirCorrect; } }
         public bool StartWithWindows
         {
-            get { return Settings.SettingsObject.RunWithWindows; }
+            get { return Settings.Instance.RunWithWindows; }
             set
             {
                 OnPropertyChanged(nameof(StartWithWindows));
-                Settings.SettingsObject.RunWithWindows = value;
+                Settings.Instance.RunWithWindows = value;
             }
         }
         public bool RunHided
         {
-            get { return Settings.SettingsObject.RunHided; }
+            get { return Settings.Instance.RunHided; }
             set
             {
-                Settings.SettingsObject.RunHided = value;
+                Settings.Instance.RunHided = value;
                 OnPropertyChanged(nameof(StartWithWindows));
             }
         }
-        public ObservableCollection<WifiAdbConnector.Connectoin> Addresses { get { return connector.Addresses; } }
+        public ObservableCollection<Connectoin> Addresses { get { return _connector.Addresses; } }
         public string CheckInterval
         {
-            get { return (timer.Interval / 1000).ToString(); }
+            get { return (_timer.Interval / 1000).ToString(); }
             set
             {
                 if (int.TryParse(value, out int o))
                     if (o * 1000 >= 1000)
                     {
-                        timer.Interval = o * 1000;
-                        Settings.SettingsObject.CheckInterval = o.ToString();
+                        _timer.Interval = o * 1000;
+                        Settings.Instance.CheckInterval = o.ToString();
                     }
             }
         }
-        private bool autoReconnect = false;
+        private bool _autoReconnect = false;
         public bool AutoReconnect
         {
-            get { return autoReconnect; }
+            get { return _autoReconnect; }
             set
             {
-                autoReconnect = value;
+                _autoReconnect = value;
                 if (value)
-                    timer.Elapsed += Reconnect;
+                    _timer.Elapsed += Reconnect;
                 else
-                    timer.Elapsed -= Reconnect;
-                Settings.SettingsObject.AutoConnection = value;
+                    _timer.Elapsed -= Reconnect;
+                Settings.Instance.AutoConnection = value;
             }
         }
-        private Timer timer = new Timer() { AutoReset = true, Interval = 3000 };
 
-        private RelayCommand deleteSelectedCommand;
+        private RelayCommand _deleteSelectedCommand;
         public RelayCommand DeleteSelectedCommand
         {
             get
             {
-                return deleteSelectedCommand ??
-                  (deleteSelectedCommand = new RelayCommand(obj =>
+                return _deleteSelectedCommand ??
+                  (_deleteSelectedCommand = new RelayCommand(obj =>
                   {
                       if (SelectedConnection == null)
                           return;
-                      connector.RemoveConnection(SelectedConnection);
+                      _connector.RemoveConnection(SelectedConnection);
                   }));
             }
         }
 
-        private RelayCommand deleteFailedCommand;
+        private RelayCommand _deleteFailedCommand;
         public RelayCommand DeleteFailedCommand
         {
             get
             {
-                return deleteFailedCommand ??
-                  (deleteFailedCommand = new RelayCommand(obj =>
+                return _deleteFailedCommand ??
+                  (_deleteFailedCommand = new RelayCommand(obj =>
                   {
-                      connector.RemoveFailed();
+                      _connector.RemoveFailed();
                   }));
             }
         }
 
-        private RelayCommand restartAdbCommand;
+        private RelayCommand _restartAdbCommand;
         public RelayCommand RestartAdbCommand
         {
             get
             {
-                return restartAdbCommand ??
-                  (restartAdbCommand = new RelayCommand(obj =>
+                return _restartAdbCommand ??
+                  (_restartAdbCommand = new RelayCommand(obj =>
                   {
-                      connector.Reset();
+                      _connector.Reset();
                   }));
             }
         }
 
-        private RelayCommand reconnectAllCommand;
+        private RelayCommand _reconnectAllCommand;
         public RelayCommand ReconnectAllCommand
         {
             get
             {
-                return reconnectAllCommand ??
-                  (reconnectAllCommand = new RelayCommand(obj =>
+                return _reconnectAllCommand ??
+                  (_reconnectAllCommand = new RelayCommand(obj =>
                   {
                       Reconnect();
                   }));
             }
         }
 
-        private RelayCommand addNewCommand;
+        private RelayCommand _addNewCommand;
         public RelayCommand AddNewCommand
         {
             get
             {
-                return addNewCommand ??
-                  (addNewCommand = new RelayCommand(obj =>
+                return _addNewCommand ??
+                  (_addNewCommand = new RelayCommand(obj =>
                   {
                       AddNew(NewAddress);
                   }));
@@ -141,31 +141,30 @@ namespace AutoWifiAdbConnect.MVVM.ViewModel
         }
         private void AddNew(string address)
         {
-            bool res = connector.Add(address);
-            if (res)
-                connector.TryConnect(address);
+            if (_connector.Add(address))
+                _connector.TryConnect(address);
         }
 
-        private RelayCommand tryAllCommand;
+        private RelayCommand _tryAllCommand;
         public RelayCommand TryAllCommand
         {
             get
             {
-                return tryAllCommand ??
-                  (tryAllCommand = new RelayCommand(obj =>
+                return _tryAllCommand ??
+                  (_tryAllCommand = new RelayCommand(obj =>
                   {
-                      connector.TryAllLocalIp();
+                      _connector.TryAllLocalIp();
                   }));
             }
         }
 
-        private RelayCommand pickAdbDirCommand;
+        private RelayCommand _pickAdbDirCommand;
         public RelayCommand PickAdbDirCommand
         {
             get
             {
-                return pickAdbDirCommand ??
-                  (pickAdbDirCommand = new RelayCommand(obj =>
+                return _pickAdbDirCommand ??
+                  (_pickAdbDirCommand = new RelayCommand(obj =>
                   {
                       Ookii.Dialogs.Wpf.VistaFolderBrowserDialog fbd = new Ookii.Dialogs.Wpf.VistaFolderBrowserDialog();
                       if (fbd.ShowDialog().Value)
@@ -174,13 +173,13 @@ namespace AutoWifiAdbConnect.MVVM.ViewModel
             }
         }
 
-        private RelayCommand appShutdownCommand;
+        private RelayCommand _appShutdownCommand;
         public RelayCommand AppShutdownCommand
         {
             get
             {
-                return appShutdownCommand ??
-                  (appShutdownCommand = new RelayCommand(obj =>
+                return _appShutdownCommand ??
+                  (_appShutdownCommand = new RelayCommand(obj =>
                   {
                       App.Current.Shutdown();
                   }));
@@ -188,7 +187,7 @@ namespace AutoWifiAdbConnect.MVVM.ViewModel
         }
         private void Reconnect(object sender = null, EventArgs e = null)
         {
-            connector.ConnectAll();
+            _connector.ConnectAll();
         }
         public MainViewModel()
         {
@@ -199,19 +198,19 @@ namespace AutoWifiAdbConnect.MVVM.ViewModel
                     List<string> macs = new List<string>();
                     foreach (var c in Addresses)
                         macs.Add(c.MacAddress);
-                    Settings.SettingsObject.MacAddresses = macs;
+                    Settings.Instance.MacAddresses = macs;
                 }
             };
-            connector = new WifiAdbConnector(adbExecutor);
-            connector.PropertyChanged += (sender, e) => OnPropertyChanged(e.PropertyName);
-            timer.Elapsed += (sender, e) => connector.UpdateAllStatus();
-            timer.Start();
+            _connector = new WifiAdbConnector(_adbExecutor);
+            _connector.PropertyChanged += (sender, e) => OnPropertyChanged(e.PropertyName);
+            _timer.Elapsed += (sender, e) => _connector.UpdateAllStatus();
+            _timer.Start();
             Load();
         }
 
         private void Load()
         {
-            var settings = Settings.SettingsObject;
+            var settings = Settings.Instance;
             AdbDir = settings.AdbPath;
             foreach (var mac in settings.MacAddresses)
                 AddNew(mac);

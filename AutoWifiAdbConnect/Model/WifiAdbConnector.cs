@@ -1,39 +1,51 @@
 ﻿using AutoWifiAdbConnect.LocalNetworkTools;
+using AutoWifiAdbConnect.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 
-namespace AutoWifiAdbConnect.MVVM.Model
+namespace AutoWifiAdbConnect.Model
 {
     class WifiAdbConnector : INotifyPropertyChanged
     {
-        private ObservableCollection<Connectoin> macAddresses = new ObservableCollection<Connectoin>();
+        private ObservableCollection<Connectoin> _macAddresses = new ObservableCollection<Connectoin>();
         public ObservableCollection<Connectoin> Addresses
         {
-            get { return macAddresses; }
+            get { return _macAddresses; }
             set
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(Addresses));
-                lock (macAddresses)
+                lock (_macAddresses)
                 {
-                    macAddresses = value;
+                    _macAddresses = value;
                 }
             }
         }
-        private readonly IPMacMapper ipMacMapper;
-        private readonly AdbExecutor adbExecutor;
+        private readonly IPMacMapper _ipMacMapper;
+        private readonly AdbExecutor _adbExecutor;
+
+        public WifiAdbConnector(AdbExecutor _adbExecutor, IEnumerable<string> _macAddresses = null)
+        {
+            _ipMacMapper = new IPMacMapper();
+            this._adbExecutor = _adbExecutor;
+            this._adbExecutor.Executed += OnExecResult;
+            if (_macAddresses != null)
+                foreach (var mac in _macAddresses)
+                    Addresses.Add(new Connectoin(mac, _ipMacMapper));
+            Reset();
+        }
 
         #region Public
         public void Reset()
         {
-            ipMacMapper.RefreshList();
-            adbExecutor.Enqueue("kill-server");
+            _ipMacMapper.RefreshList();
+            _adbExecutor.Enqueue("kill-server");
             foreach (Connectoin con in Addresses)
                 con.State = Connectoin.ConnectionState.Failed;
-            adbExecutor.Enqueue("start-server");
+            _adbExecutor.Enqueue("start-server");
         }
 
         public bool Add(string macOrIp)
@@ -43,9 +55,9 @@ namespace AutoWifiAdbConnect.MVVM.Model
 
         public bool AddMac(string mac)
         {
-            if (string.IsNullOrEmpty(ipMacMapper.FindIPFromMacAddress(mac)) || Addresses.Any(con => con.MacAddress == mac))
+            if (string.IsNullOrEmpty(_ipMacMapper.FindIPFromMacAddress(mac)) || Addresses.Any(con => con.MacAddress == mac))
                 return false;
-            Connectoin macInfo = new Connectoin(mac, ipMacMapper);
+            Connectoin macInfo = new Connectoin(mac, _ipMacMapper);
             Addresses.Add(macInfo);
             OnPropertyChanged(nameof(Addresses));
             return true;
@@ -53,10 +65,10 @@ namespace AutoWifiAdbConnect.MVVM.Model
 
         public bool AddIp(string ip)
         {
-            string mac = ipMacMapper.FindMacFromIPAddress(ip);
+            string mac = _ipMacMapper.FindMacFromIPAddress(ip);
             if (string.IsNullOrEmpty(mac) || Addresses.Any(con => con.MacAddress == mac))
                 return false;
-            Connectoin macInfo = new Connectoin(mac, ipMacMapper);
+            Connectoin macInfo = new Connectoin(mac, _ipMacMapper);
             Addresses.Add(macInfo);
             OnPropertyChanged(nameof(Addresses));
             return true;
@@ -103,7 +115,7 @@ namespace AutoWifiAdbConnect.MVVM.Model
             if (!Addresses.Contains(con))
                 throw new Exception(nameof(Addresses) + " has not this mac. Firstly add it.");
             con.State = Connectoin.ConnectionState.Pending;
-            adbExecutor.Enqueue($"connect {con.IpAddress}");
+            _adbExecutor.Enqueue($"connect {con.IpAddress}");
             return true;
         }
 
@@ -115,7 +127,7 @@ namespace AutoWifiAdbConnect.MVVM.Model
 
         public void TryAllLocalIp()
         {
-            var all = ipMacMapper.GetAllIps();
+            var all = _ipMacMapper.GetAllIps();
             foreach (var ip in all)
             {
                 try
@@ -129,20 +141,9 @@ namespace AutoWifiAdbConnect.MVVM.Model
 
         public void UpdateAllStatus()
         {
-            adbExecutor.Enqueue("devices");
+            _adbExecutor.Enqueue("devices");
         }
         #endregion
-
-        public WifiAdbConnector(AdbExecutor _adbExecutor, IEnumerable<string> _macAddresses = null)
-        {
-            ipMacMapper = new IPMacMapper();
-            adbExecutor = _adbExecutor;
-            adbExecutor.Executed += OnExecResult;
-            if (_macAddresses != null)
-                foreach (var mac in _macAddresses)
-                    Addresses.Add(new Connectoin(mac, ipMacMapper));
-            Reset();
-        }
 
         private void OnExecResult(object sender, AdbExecutor.CommandExecutedEventArgs e)
         {
@@ -189,65 +190,10 @@ namespace AutoWifiAdbConnect.MVVM.Model
 
         #region NotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged(string propertyName)
+        private void OnPropertyChanged(string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
-
-        public class Connectoin : INotifyPropertyChanged
-        {
-            public string MacAddress { get; private set; }
-            public string IpAddress { get { return mapper.FindIPFromMacAddress(MacAddress); } }
-            private ConnectionState state;
-            public ConnectionState State
-            {
-                get { return state; }
-                set { state = value; OnPropertyChanged(nameof(State)); }
-            }
-            private IPMacMapper mapper;
-
-            public Connectoin(string mac, IPMacMapper _mapper)
-            {
-                MacAddress = mac;
-                mapper = _mapper;
-                State = ConnectionState.Failed;
-            }
-
-            public override string ToString()
-            {
-                string pattern = "255.255.255.255";
-                return $"IP is {IpAddress + string.Join("", Enumerable.Repeat(" ", pattern.Length - IpAddress.Length))}\t MAC is {MacAddress}";
-            }
-
-            public enum ConnectionState
-            {
-                Failed,
-                Pending,
-                Successful,
-            }
-
-            #region NotifyPropertyChanged
-            public event PropertyChangedEventHandler PropertyChanged;
-            private void OnPropertyChanged(string propertyName)
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-
-
-            #endregion
-
-            public override bool Equals(object obj)
-            {
-                return obj is Connectoin connectoin &&
-                       MacAddress == connectoin.MacAddress &&
-                       IpAddress == connectoin.IpAddress;
-            }
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(MacAddress, IpAddress);
-            }
-        }
     }
 }

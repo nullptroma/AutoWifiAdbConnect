@@ -1,7 +1,7 @@
-﻿using AutoWifiAdbConnect.MVVM.ViewModel;
+﻿using AutoWifiAdbConnect.ViewModel;
 using System.Windows;
 
-namespace AutoWifiAdbConnect
+namespace AutoWifiAdbConnect.View
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -12,7 +12,7 @@ namespace AutoWifiAdbConnect
         {
             InitializeComponent();
             DataContext = new MainViewModel();
-            if (Settings.SettingsObject.RunHided)
+            if (Settings.Instance.RunHided)
                 HideWindow();
         }
 
