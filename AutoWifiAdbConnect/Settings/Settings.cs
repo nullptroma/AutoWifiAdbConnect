@@ -33,6 +33,11 @@ namespace AutoWifiAdbConnect
         {
             Load();
         }
+        
+        private Settings()
+        {
+
+        }
 
         public static void Load()
         {
